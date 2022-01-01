@@ -1,0 +1,134 @@
+import firebase, {
+  initializeApp
+} from 'fire';
+import {
+  getAuth,
+  onAuthStateChanged,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  grecaptcha,
+  signOut,
+  signInWithCredential.
+  PhoneAuthProvider
+} from "fire-auth";
+
+var Config = {
+  apiKey: "AIzaSyANM0-Mb7s08iDldf0mopepF0HFOLy5qeI",
+  authDomain: "chat-21539.firebaseapp.com",
+  databaseURL: "https://chat-21539-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "chat-21539",
+  storageBucket: "chat-21539.appspot.com",
+  messagingSenderId: "1045802575061",
+  appId: "1:1045802575061:web:ee75519c2dd750819e6e5c",
+  measurementId: "G-MYW5ZFQSYX"
+};
+
+initializeApp(Config);
+const auth = getAuth();
+
+
+const authState = function(atLogin, atLogout) {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+        if (atLogin == 'function') {
+      atLogin(user);
+          }
+    } else {
+        if (atLogout == 'function') {
+      atLogout();
+          }
+    }
+  });
+}
+
+
+const phoneSignIn = {
+
+  onready: function(next) {
+    window.RecaptchaVerifier= new RecaptchaVerifier('sign-in-button',
+      {
+        'size': 'invisible',
+        'callback': (response) => {
+          if (next == 'function') {
+            next(response);
+          }
+        },
+        'expired-callback': () => {}
+      },
+      auth);
+  },
+
+  start: function() {
+    if(window.RecaptchaVerifier='undefined'){
+      phoneSignIn.onready();
+    }
+    return  window.RecaptchaVerifier.render().then((widgetId) => {
+      window.recaptchaWidgetId = widgetId;
+    });
+  },
+  restart: function() {
+    grecaptcha.reset(window.recaptchaWidgetId)
+
+  },
+
+  login: function(phoneNumber,
+    callbackVerify,
+    callbackError) {
+
+    signInWithPhoneNumber(auth,
+      phoneNumber,
+      window.RecaptchaVerifier).then((confirmationResult) => {
+        window.confirmationResult = confirmationResult;
+        console.log('login successful');
+        if (callbackVerify == 'function') {
+          callbackVerify();
+        }
+
+      }).catch((error) => {
+        console.log(error);
+        if (callbackError == 'function') {
+          callbackError(error);
+        }
+        phoneSignIn.restart();
+      });
+  },
+
+  verify: function(code,
+    callbackVerify,
+    callbackError) {
+    window.confirmationResult.confirm(code).then((result) => {
+      if (callbackVerify == 'function') {
+        callbackVerify(result);
+      }
+    }).catch((error) => {
+      if (callbackError == 'function') {
+        callbackError(error);
+      }
+    });
+  },
+  credentialVerify:function(code){
+    window.credential=PhoneAuthProvider.credential(window.confirmationResult.verificationId, code);
+    signInWithCredential(window.credential);
+  },
+  credentialRelogin:function(){
+    signInWithCredential(window.credential);
+  },
+  logout: function(callbackSucc,
+    callbackError) {
+    signOut(auth).then(() => {
+      // Sign-out successful.
+      if (callbackSucc == 'function') {
+        callbackSucc();
+      }
+    }).catch((error) => {
+      // An error happened.
+      if (callbackError == 'function') {
+        callbackError(error);
+      }
+    });
+  }
+}
+
+export default auth;
+  export {authState, phoneSignIn};
+  
